@@ -1,1 +1,100 @@
 test
+#!/bin/bash
+
+FEED_NAME="$1"
+TRADE_DATE=$(date '+%Y-%m-%d')
+HTML_FILE="/tmp/${FEED_NAME}_sanity_${TRADE_DATE}.html"
+
+DB_USER="your_db_user"
+DB_PASS="your_db_password"
+DB_TNS="your_db_tns"
+
+# Get recipient email for this feed
+EMAIL_TO=$(sqlplus -s ${DB_USER}/${DB_PASS}@${DB_TNS} <<EOF
+SET HEADING OFF FEEDBACK OFF PAGES 0 TRIMSPOOL ON
+SELECT DISTINCT recipient_emails FROM trade_feed_query_config WHERE feed_name = '$FEED_NAME';
+EXIT;
+EOF
+)
+
+# HTML header
+echo "<html><body>" > $HTML_FILE
+echo "<h3>Sanity Check Report - ${FEED_NAME}</h3>" >> $HTML_FILE
+echo "<p><b>Trade Date:</b> ${TRADE_DATE}</p>" >> $HTML_FILE
+
+# PL/SQL to build HTML tables dynamically
+sqlplus -s ${DB_USER}/${DB_PASS}@${DB_TNS} <<EOF >> $HTML_FILE
+SET SERVEROUTPUT ON SIZE 1000000
+SET FEEDBACK OFF
+SET HEADING OFF
+SET PAGESIZE 0
+SET LINESIZE 1000
+
+DECLARE
+    CURSOR c_queries IS
+        SELECT query, description
+        FROM trade_feed_query_config
+        WHERE feed_name = '$FEED_NAME'
+        ORDER BY query_seq;
+
+    v_cursor   INTEGER;
+    v_sql      CLOB;
+    v_col_cnt  INTEGER;
+    v_desc     VARCHAR2(500);
+    v_col_val  VARCHAR2(4000);
+    v_col_name VARCHAR2(1000);
+    col_tab    DBMS_SQL.VARCHAR2_TABLE;
+BEGIN
+    FOR rec IN c_queries LOOP
+        v_sql := REPLACE(rec.query, ':TRADE_DATE', '''$TRADE_DATE''');
+        v_desc := rec.description;
+
+        v_cursor := DBMS_SQL.OPEN_CURSOR;
+        DBMS_SQL.PARSE(v_cursor, v_sql, DBMS_SQL.NATIVE);
+
+        v_col_cnt := DBMS_SQL.DESCRIBE_COLUMNS(v_cursor);
+        FOR i IN 1..v_col_cnt LOOP
+            DBMS_SQL.DEFINE_COLUMN(v_cursor, i, col_tab(i), 4000);
+        END LOOP;
+
+        -- Start section
+        DBMS_OUTPUT.PUT_LINE('<table border=''1'' cellpadding=''5'' cellspacing=''0'' style=''border-collapse: collapse; font-family: Arial;'">');
+        DBMS_OUTPUT.PUT_LINE('<tr style="background-color:#e6f7ff"><td colspan="' || v_col_cnt || '"><b>' || v_desc || '</b></td></tr>');
+
+        -- Header row
+        DBMS_OUTPUT.PUT_LINE('<tr>');
+        FOR i IN 1..v_col_cnt LOOP
+            DBMS_SQL.DESCRIBE_COLUMN(v_cursor, i, v_col_name, v_col_cnt, v_col_cnt, v_col_cnt, v_col_cnt);
+            DBMS_OUTPUT.PUT_LINE('<th>' || v_col_name || '</th>');
+        END LOOP;
+        DBMS_OUTPUT.PUT_LINE('</tr>');
+
+        -- Data rows
+        WHILE DBMS_SQL.FETCH_ROWS(v_cursor) > 0 LOOP
+            DBMS_OUTPUT.PUT_LINE('<tr>');
+            FOR i IN 1..v_col_cnt LOOP
+                DBMS_SQL.COLUMN_VALUE(v_cursor, i, v_col_val);
+                DBMS_OUTPUT.PUT_LINE('<td>' || v_col_val || '</td>');
+            END LOOP;
+            DBMS_OUTPUT.PUT_LINE('</tr>');
+        END LOOP;
+
+        DBMS_SQL.CLOSE_CURSOR(v_cursor);
+        DBMS_OUTPUT.PUT_LINE('</table><br/>');
+    END LOOP;
+EXCEPTION
+    WHEN OTHERS THEN
+        IF DBMS_SQL.IS_OPEN(v_cursor) THEN
+            DBMS_SQL.CLOSE_CURSOR(v_cursor);
+        END IF;
+        DBMS_OUTPUT.PUT_LINE('<tr><td colspan="5" style="color:red;">Error: ' || SQLERRM || '</td></tr>');
+END;
+/
+EOF
+
+# HTML Footer
+echo "</body></html>" >> $HTML_FILE
+
+# Send Mail
+echo "Sending mail to $EMAIL_TO..."
+mailx -a "Content-Type: text/html" -s "Sanity Check Report: $FEED_NAME - $TRADE_DATE" "$EMAIL_TO" < $HTML_FILE
