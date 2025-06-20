@@ -1,3 +1,93 @@
+
+sqlplus -s ${DB_USER}/${DB_PASS}@${DB_TNS} <<!END
+SET SERVEROUTPUT ON SIZE 1000000
+SET FEEDBACK OFF
+SET HEADING OFF
+SET PAGESIZE 0
+SET LINESIZE 1000
+SPOOL $HTML_FILE APPEND
+
+DECLARE
+    CURSOR c_queries IS
+        SELECT query, description
+        FROM trade_feed_query_config
+        WHERE feed_name = '$FEED_NAME'
+        ORDER BY query_seq;
+
+    v_cursor     INTEGER;
+    v_sql        CLOB;
+    v_col_cnt    INTEGER;
+    v_desc       VARCHAR2(500);
+    v_col_val    VARCHAR2(4000);
+    v_col_name   VARCHAR2(1000);
+    v_col_type   BINARY_INTEGER;
+    v_col_len    BINARY_INTEGER;
+    v_precision  BINARY_INTEGER;
+    v_scale      BINARY_INTEGER;
+    col_tab      DBMS_SQL.VARCHAR2_TABLE;
+BEGIN
+    FOR rec IN c_queries LOOP
+        -- Replace trade date and created date if present
+        v_sql := REPLACE(rec.query, ':trade_date', '''$TRADE_DATE''');
+        v_sql := REPLACE(v_sql, ':created_date', '''$TRADE_DATE''');
+        v_desc := rec.description;
+
+        v_cursor := DBMS_SQL.OPEN_CURSOR;
+        DBMS_SQL.PARSE(v_cursor, v_sql, DBMS_SQL.NATIVE);
+
+        v_col_cnt := DBMS_SQL.DESCRIBE_COLUMNS(v_cursor);
+        FOR i IN 1..v_col_cnt LOOP
+            DBMS_SQL.DEFINE_COLUMN(v_cursor, i, col_tab(i), 4000);
+        END LOOP;
+
+        -- Begin HTML table for this query
+        DBMS_OUTPUT.PUT_LINE('<table border=''1'' cellpadding=''5'' cellspacing=''0'' style=''border-collapse: collapse; font-family: Arial;'">');
+        DBMS_OUTPUT.PUT_LINE('<tr style="background-color:#e6f7ff"><td colspan="' || v_col_cnt || '"><b>' || v_desc || '</b></td></tr>');
+
+        -- Print column headers
+        DBMS_OUTPUT.PUT_LINE('<tr>');
+        FOR i IN 1..v_col_cnt LOOP
+            DBMS_SQL.DESCRIBE_COLUMN(v_cursor, i, v_col_name, v_col_type, v_col_len, v_precision, v_scale);
+            DBMS_OUTPUT.PUT_LINE('<th>' || SUBSTR(v_col_name, 1, 30) || '</th>');
+        END LOOP;
+        DBMS_OUTPUT.PUT_LINE('</tr>');
+
+        -- Fetch and print rows
+        IF DBMS_SQL.EXECUTE(v_cursor) > 0 THEN
+            NULL;
+        END IF;
+
+        WHILE DBMS_SQL.FETCH_ROWS(v_cursor) > 0 LOOP
+            DBMS_OUTPUT.PUT_LINE('<tr>');
+            FOR i IN 1..v_col_cnt LOOP
+                DBMS_SQL.COLUMN_VALUE(v_cursor, i, v_col_val);
+                DBMS_OUTPUT.PUT_LINE('<td>' || v_col_val || '</td>');
+            END LOOP;
+            DBMS_OUTPUT.PUT_LINE('</tr>');
+        END LOOP;
+
+        DBMS_SQL.CLOSE_CURSOR(v_cursor);
+        DBMS_OUTPUT.PUT_LINE('</table><br/>');
+    END LOOP;
+EXCEPTION
+    WHEN OTHERS THEN
+        IF DBMS_SQL.IS_OPEN(v_cursor) THEN
+            DBMS_SQL.CLOSE_CURSOR(v_cursor);
+        END IF;
+        DBMS_OUTPUT.PUT_LINE('<tr><td colspan="5" style="color:red;">Error: ' || SQLERRM || '</td></tr>');
+END;
+/
+
+SPOOL OFF
+EXIT;
+!END
+
+
+
+
+
+
+
 test
 #!/bin/bash
 
