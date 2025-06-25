@@ -3,6 +3,79 @@ SET SERVEROUTPUT ON SIZE 1000000
 DECLARE
     v_sql         CLOB;
     v_cursor      INTEGER;
+    v_col_cnt     INTEGER := 0;
+    v_col_val     VARCHAR2(4000);
+    v_ignore      INTEGER;
+    
+    v_feed_name   VARCHAR2(100) := 'FIC'; -- replace with your feed
+    v_trade_date  VARCHAR2(10);
+    
+    col_name_tab  DBMS_SQL.VARCHAR2_TABLE;
+    col_type_tab  DBMS_SQL.NUMBER_TABLE;
+BEGIN
+    -- Step 1: Get trade date
+    SELECT param1
+    INTO v_trade_date
+    FROM load.control_table
+    WHERE param2 = 'dailyrefreshdate';
+
+    DBMS_OUTPUT.PUT_LINE('Trade Date: ' || v_trade_date);
+
+    -- Step 2: Get query from config
+    SELECT recon_query_1
+    INTO v_sql
+    FROM load.aity_check
+    WHERE feed_name = v_feed_name
+    AND query_seq = 1;
+
+    -- Step 3: Replace placeholders
+    v_sql := REPLACE(v_sql, ':TRADE_DATE', '''' || v_trade_date || '''');
+    v_sql := REPLACE(v_sql, ':CREATED_DATE', '''' || v_trade_date || '''');
+
+    DBMS_OUTPUT.PUT_LINE('SQL: ' || SUBSTR(v_sql, 1, 200));
+
+    -- Step 4: Parse and describe
+    v_cursor := DBMS_SQL.OPEN_CURSOR;
+    DBMS_SQL.PARSE(v_cursor, v_sql, DBMS_SQL.NATIVE);
+
+    DBMS_SQL.DESCRIBE_COLUMNS(v_cursor, v_col_cnt, col_name_tab, col_type_tab);
+
+    FOR i IN 1 .. v_col_cnt LOOP
+        DBMS_SQL.DEFINE_COLUMN(v_cursor, i, v_col_val, 4000);
+    END LOOP;
+
+    -- Step 5: Execute
+    v_ignore := DBMS_SQL.EXECUTE(v_cursor);
+
+    -- Step 6: Fetch and print
+    WHILE DBMS_SQL.FETCH_ROWS(v_cursor) > 0 LOOP
+        FOR i IN 1 .. v_col_cnt LOOP
+            DBMS_SQL.COLUMN_VALUE(v_cursor, i, v_col_val);
+            DBMS_OUTPUT.PUT_LINE('-> ' || col_name_tab(i) || ': ' || v_col_val);
+        END LOOP;
+    END LOOP;
+
+    DBMS_SQL.CLOSE_CURSOR(v_cursor);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        IF DBMS_SQL.IS_OPEN(v_cursor) THEN
+            DBMS_SQL.CLOSE_CURSOR(v_cursor);
+        END IF;
+        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
+END;
+/
+
+
+
+
+
+
+SET SERVEROUTPUT ON SIZE 1000000
+
+DECLARE
+    v_sql         CLOB;
+    v_cursor      INTEGER;
     v_col_cnt     INTEGER;
     v_col_val     VARCHAR2(4000);
     v_col_name    VARCHAR2(1000);
