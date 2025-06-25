@@ -1,4 +1,75 @@
+SET SERVEROUTPUT ON SIZE 1000000
 
+DECLARE
+    v_sql         CLOB;
+    v_cursor      INTEGER;
+    v_col_cnt     INTEGER;
+    v_col_val     VARCHAR2(4000);
+    v_col_name    VARCHAR2(1000);
+    v_col_type    BINARY_INTEGER;
+    v_col_len     BINARY_INTEGER;
+    v_precision   BINARY_INTEGER;
+    v_scale       BINARY_INTEGER;
+
+    v_feed_name   VARCHAR2(100) := 'FIC'; -- your feed name
+    v_trade_date  VARCHAR2(10);
+
+BEGIN
+    -- Step 1: Get trade date from control table
+    SELECT param1 INTO v_trade_date
+    FROM coad.control_table
+    WHERE param2 = 'dailyrefreshdate';
+
+    DBMS_OUTPUT.PUT_LINE('Trade Date: ' || v_trade_date);
+
+    -- Step 2: Fetch SQL from config table
+    SELECT recon_query_1
+    INTO v_sql
+    FROM oad.aity_check
+    WHERE feed_name = v_feed_name
+    AND query_seq = 1;  -- test first query
+
+    -- Step 3: Replace bind variables
+    v_sql := REPLACE(v_sql, ':TRADE_DATE', '''' || v_trade_date || '''');
+    v_sql := REPLACE(v_sql, ':CREATED_DATE', '''' || v_trade_date || '''');
+
+    DBMS_OUTPUT.PUT_LINE('Executing Query (trimmed):');
+    DBMS_OUTPUT.PUT_LINE(SUBSTR(v_sql, 1, 200));
+
+    -- Step 4: Execute dynamically
+    v_cursor := DBMS_SQL.OPEN_CURSOR;
+    DBMS_SQL.PARSE(v_cursor, v_sql, DBMS_SQL.NATIVE);
+
+    v_col_cnt := DBMS_SQL.DESCRIBE_COLUMNS(v_cursor);
+
+    FOR i IN 1..v_col_cnt LOOP
+        DBMS_SQL.DEFINE_COLUMN(v_cursor, i, v_col_val, 4000);
+    END LOOP;
+
+    DBMS_SQL.EXECUTE(v_cursor);
+
+    WHILE DBMS_SQL.FETCH_ROWS(v_cursor) > 0 LOOP
+        FOR i IN 1..v_col_cnt LOOP
+            DBMS_SQL.COLUMN_VALUE(v_cursor, i, v_col_val);
+            DBMS_OUTPUT.PUT_LINE('-> Col ' || i || ': ' || v_col_val);
+        END LOOP;
+    END LOOP;
+
+    DBMS_SQL.CLOSE_CURSOR(v_cursor);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        IF DBMS_SQL.IS_OPEN(v_cursor) THEN
+            DBMS_SQL.CLOSE_CURSOR(v_cursor);
+        END IF;
+        DBMS_OUTPUT.PUT_LINE('ERROR: ' || SQLERRM);
+END;
+/
+
+
+
+
+.......
 sqlplus -s ${DB_USER}/${DB_PASS}@${DB_TNS} <<!END
 SET SERVEROUTPUT ON SIZE 1000000
 SET FEEDBACK OFF
