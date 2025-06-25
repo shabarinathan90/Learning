@@ -1,3 +1,123 @@
+
+#!/bin/bash
+
+# ====== CONFIGURATION ======
+FEED_NAME="$1"
+LOG_DATE=$(date '+%d-%b-%Y' | tr '[:upper:]' '[:lower:]')
+HTML_FILE="/tmp/${FEED_NAME}_sanity_${LOG_DATE}.html"
+
+DB_USER="your_user"
+DB_PASS="your_password"
+DB_TNS="your_tns"
+
+# ====== FETCH RECIPIENT EMAIL ======
+EMAIL_TO=$(sqlplus -s ${DB_USER}/${DB_PASS}@${DB_TNS} <<EOF
+SET HEADING OFF FEEDBACK OFF PAGES 0 TRIMSPOOL ON
+SELECT recipient_emails FROM csarload.aps_data_sanity_check WHERE feed_name = '${FEED_NAME}' AND ROWNUM = 1;
+EXIT;
+EOF
+)
+
+# ====== START HTML ======
+echo "<html><body>" > $HTML_FILE
+echo "<p>Hi,</p>" >> $HTML_FILE
+echo "<p>Sanity check report - <b>${FEED_NAME}</b></p>" >> $HTML_FILE
+echo "<p><b>Trade Date:</b> ${LOG_DATE}</p>" >> $HTML_FILE
+
+# ====== EXECUTE SQL BLOCK ======
+sqlplus -s ${DB_USER}/${DB_PASS}@${DB_TNS} <<EOF >> $HTML_FILE
+SET SERVEROUTPUT ON SIZE 1000000
+SET FEEDBACK OFF
+SET HEADING OFF
+SET PAGESIZE 0
+SET LINESIZE 1000
+SET TERMOUT OFF
+
+DECLARE
+    v_sql         CLOB;
+    v_cursor      INTEGER;
+    v_col_cnt     INTEGER := 0;
+    v_col_val     VARCHAR2(4000);
+    v_ignore      INTEGER;
+    v_trade_date  VARCHAR2(11);
+    v_feed_name   VARCHAR2(100) := '${FEED_NAME}';
+    v_desc        VARCHAR2(200);
+
+    col_desc_tab  DBMS_SQL.DESC_TAB;
+BEGIN
+    -- Step 1: Get Trade Date from control table
+    SELECT LOWER(TO_CHAR(TO_DATE(param1, 'YYYY-MM-DD'), 'DD-MON-YYYY'))
+    INTO v_trade_date
+    FROM load.control_table
+    WHERE param2 = 'dailyrefreshdate';
+
+    FOR rec IN (
+        SELECT recon_query_1 AS query, feed_description AS description
+        FROM load.asanity_check
+        WHERE feed_name = v_feed_name
+        ORDER BY query_seq
+    ) LOOP
+        v_sql := rec.query;
+        v_desc := rec.description;
+
+        -- Replace parameters
+        v_sql := REPLACE(v_sql, ':TRADE_DATE', '''' || v_trade_date || '''');
+        v_sql := REPLACE(v_sql, ':CREATED_DATE', '''' || v_trade_date || '''');
+
+        DBMS_OUTPUT.PUT_LINE('<h4>' || v_desc || '</h4>');
+        DBMS_OUTPUT.PUT_LINE('<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; font-family: Arial;">');
+
+        v_cursor := DBMS_SQL.OPEN_CURSOR;
+        DBMS_SQL.PARSE(v_cursor, v_sql, DBMS_SQL.NATIVE);
+        DBMS_SQL.DESCRIBE_COLUMNS(v_cursor, v_col_cnt, col_desc_tab);
+
+        -- Define columns
+        FOR i IN 1..v_col_cnt LOOP
+            DBMS_SQL.DEFINE_COLUMN(v_cursor, i, v_col_val, 4000);
+        END LOOP;
+
+        -- Table Header
+        DBMS_OUTPUT.PUT_LINE('<tr>');
+        FOR i IN 1..v_col_cnt LOOP
+            DBMS_OUTPUT.PUT_LINE('<th>' || SUBSTR(col_desc_tab(i).col_name, 1, 30) || '</th>');
+        END LOOP;
+        DBMS_OUTPUT.PUT_LINE('</tr>');
+
+        -- Execute and print data rows
+        v_ignore := DBMS_SQL.EXECUTE(v_cursor);
+        WHILE DBMS_SQL.FETCH_ROWS(v_cursor) > 0 LOOP
+            DBMS_OUTPUT.PUT_LINE('<tr>');
+            FOR i IN 1..v_col_cnt LOOP
+                DBMS_SQL.COLUMN_VALUE(v_cursor, i, v_col_val);
+                DBMS_OUTPUT.PUT_LINE('<td>' || v_col_val || '</td>');
+            END LOOP;
+            DBMS_OUTPUT.PUT_LINE('</tr>');
+        END LOOP;
+
+        DBMS_OUTPUT.PUT_LINE('</table><br/>');
+        DBMS_SQL.CLOSE_CURSOR(v_cursor);
+    END LOOP;
+EXCEPTION
+    WHEN OTHERS THEN
+        IF DBMS_SQL.IS_OPEN(v_cursor) THEN
+            DBMS_SQL.CLOSE_CURSOR(v_cursor);
+        END IF;
+        DBMS_OUTPUT.PUT_LINE('<p style="color:red;">Error: ' || SQLERRM || '</p>');
+END;
+/
+EOF
+
+# ====== END HTML & SEND MAIL ======
+echo "<p>Regards,<br/>Data Sanity Team</p></body></html>" >> $HTML_FILE
+
+echo "Sending email to $EMAIL_TO..."
+cat $HTML_FILE | /usr/bin/s-nail -s "Sanity Check Report: ${FEED_NAME} - ${LOG_DATE}" -r "no-reply@yourdomain.com" -a "Content-Type: text/html" "$EMAIL_TO"
+
+
+
+
+
+
 SET SERVEROUTPUT ON SIZE 1000000
 
 DECLARE
