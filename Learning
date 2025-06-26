@@ -1,3 +1,25 @@
+FOR i IN 1..v_col_cnt LOOP
+  DBMS_SQL.COLUMN_VALUE(v_cursor, i, v_col_val);
+
+  -- Trim whitespace
+  v_col_val := TRIM(v_col_val);
+
+  -- Round numeric values to 2 decimal places
+  IF REGEXP_LIKE(v_col_val, '^-?[0-9]*\.?[0-9]+$') THEN
+    BEGIN
+      v_col_val := TO_CHAR(ROUND(TO_NUMBER(v_col_val), 2));
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL; -- fallback in case of conversion failure
+    END;
+  END IF;
+
+  DBMS_OUTPUT.PUT_LINE('<td>' || v_col_val || '</td>');
+END LOOP;
+
+
+
+
 
 cat > "$HTML_FILE" <<EOF
 <html>
