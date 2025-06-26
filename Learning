@@ -1,4 +1,23 @@
 
+cat > "$HTML_FILE" <<EOF
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+<p>Hi,</p>
+<h3>Sanity Check Report - ${FEED_NAME}</h3>
+<p><b>Trade Date:</b> ${TRADE_DATE}</p>
+EOF
+
+
+
+
 #!/bin/bash
 
 # ====== CONFIGURATION ======
