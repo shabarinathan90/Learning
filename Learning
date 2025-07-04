@@ -1,3 +1,60 @@
+
+Thanks for clarifying! Based on that, here's a **revised and realistic mid-year appraisal draft** — keeping it aligned with **your actual contributions so far**:
+
+---
+
+### ✅ **Manage Risk (What)**
+
+> * Investigated and resolved multiple job failure scenarios across shell, Oracle, and ETL environments, ensuring data consistency and minimal downtime.
+> * Handled escalations related to trade feed delays and SLA misses by coordinating with upstream teams and applying fixes to prevent recurrence.
+> * Ensured risk mitigation by regularly validating critical feed authentication setups and addressing issues like expired keytabs and GSSAPI errors.
+
+---
+
+### ✅ **Drive Operational Excellence (What)**
+
+> * Automated repetitive SQL execution and data export tasks from Vertica and Oracle to Excel/CSV using shell and Python — improving team efficiency.
+> * Reduced manual effort in scribe reporting and email generation by eliminating duplicate attachments using hashing logic in .NET 6.
+> * Improved issue triaging by standardizing how logs and incorrect records are reviewed post-failure, making batch monitoring smoother.
+
+---
+
+### ✅ **Drive Growth (What)**
+
+> * Contributed to DevCon and OPEX ideas by proposing automation for failure detection and ticket creation using lightweight UI and Selenium-based workflows.
+> * Took initiative in identifying areas where user requests (like CV calculation and trade tracing) could be optimized through reusable scripts.
+> * Started exploring better technology options for data warehouse performance enhancement (e.g., Vertica alternatives) and shared early findings.
+
+---
+
+### ✅ **Great Place to Work (How)**
+
+> * Actively volunteered in ESG and CSR initiatives such as teaching students via Chennai Volunteers and supporting special kids at SPASTN.
+> * Regularly participated in team activities and internal events, encouraging a collaborative and inclusive work environment.
+> * Supported knowledge retention by documenting key production support learnings and automation scripts for team reference.
+
+---
+
+Would you like to make this even more specific to recent projects (e.g., a big incident you solved or an automation you built recently)? I can customize it further if you provide any names, metrics, or months.
+
+Perfect! Based on what you shared, here’s a polished and concise version of the **"Drive Operational Excellence (What)"** section that reflects your actual mid-year contributions:
+
+---
+
+### ✅ **Drive Operational Excellence (What)**
+
+> * Set up **MaxRun alarms for 800+ AutoSys jobs**, enabling early detection of long-running or stuck jobs and reducing batch monitoring effort.
+> * Automated **data sanity checks for all critical feed sources**, improving data reliability and reducing manual validation overhead.
+> * Analyzed and optimized batch schedules, enabling **Vertica processing to start 2 hours earlier**, improving overall turnaround time.
+> * Volunteered to take on **additional responsibilities for the Zeus application** and other team initiatives, enhancing support coverage and system knowledge.
+> * Fixed **multiple production bugs**, contributing to more stable operations and fewer escalations.
+
+---
+
+Would you like to include any metrics like how many bugs or what impact the batch timing change had (e.g., faster delivery to downstream systems)? I can revise it accordingly.
+
+
+
 FOR i IN 1..v_col_cnt LOOP
   DBMS_SQL.COLUMN_VALUE(v_cursor, i, v_col_val);
 
