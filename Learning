@@ -1,67 +1,24 @@
 #!/bin/bash
 
-# Usage: ./update_all.sh "1233,3334" Asia sari
+# Output file name
+OUTPUT_FILE="merged_tsd_daily.csv"
 
-TRADE_IDS="$1"
-REGION="$2"
-UPDATED_BY="$3"
-EMAIL_TO="your.dg@example.com"
-SUBJECT="Trade updates for: $TRADE_IDS"
-SQL_LOG="/tmp/sql_output_$$.log"
+# Remove the output file if it exists
+rm -f "$OUTPUT_FILE"
 
-# Call stored procedure
-b <<EOF > "$SQL_LOG"
-SET SERVEROUTPUT ON
-BEGIN
-    update_trade_info('$REGION', '$UPDATED_BY', '$TRADE_IDS');
-END;
-/
-EXIT;
-EOF
+# Flag to control header inclusion
+header_written=false
 
-# Prepare email body
-MAIL_BODY="Below trades were updated:
+# Loop through files sorted by date (filename includes YYYYMMDD)
+for file in $(ls Src_tsd_daily_*.csv | sort); do
+    if [ "$header_written" = false ]; then
+        # Write the header and data from the first file
+        cat "$file" >> "$OUTPUT_FILE"
+        header_written=true
+    else
+        # Skip header (first line) and append data
+        tail -n +2 "$file" >> "$OUTPUT_FILE"
+    fi
+done
 
-Trade ID(s): $TRADE_IDS
-Region     : $REGION
-Updated By : $UPDATED_BY
-
-$(tail -n 5 "$SQL_LOG")"
-
-# Send email
-echo "$MAIL_BODY" | mailx -s "$SUBJECT" "$EMAIL_TO"
-
-# Clean up
-rm -f "$SQL_LOG"
-
-
-CREATE OR REPLACE PROCEDURE update_trade_info (
-    p_region     IN VARCHAR2,
-    p_updated_by IN VARCHAR2,
-    p_trade_ids  IN VARCHAR2
-)
-AS
-    v_sql1   VARCHAR2(1000);
-    v_sql2   VARCHAR2(1000);
-    v_region VARCHAR2(10);
-BEGIN
-    -- Convert region to uppercase
-    v_region := UPPER(p_region);
-
-    -- Validate region
-    IF v_region NOT IN ('AMRS', 'EMEA', 'APAC') THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Invalid region. Must be AMRS, EMEA, or APAC.');
-    END IF;
-
-    -- Update trade table
-    v_sql1 := 'UPDATE trade SET updated_by = :1, updated_date = SYSDATE WHERE trade_id IN (' || p_trade_ids || ')';
-    EXECUTE IMMEDIATE v_sql1 USING p_updated_by;
-
-    -- Update trade_detail table with uppercase region
-    v_sql2 := 'UPDATE trail SET region = :1, updated_by = :2, updated_date = SYSDATE WHERE trade_id IN (' || p_trade_ids || ')';
-    EXECUTE IMMEDIATE v_sql2 USING v_region, p_updated_by;
-
-    DBMS_OUTPUT.PUT_LINE('Trade and Tradtail updated for traid(s): ' || p_tre_ids);
-END;
-/
-
+echo "Merged file created: $OUTPUT_FILE"
