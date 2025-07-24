@@ -1,82 +1,67 @@
 #!/bin/bash
 
-# === Configurable Inputs
-FEED_NAME="$1"
-TRADE_DATE=$(date '+%d-%b-%Y')   # like 25-Jun-2025
-HTML_FILE="/tmp/${FEED_NAME}_sanity_${TRADE_DATE}.html"
-VERTICA_DB="vdb"
-VERTICA_USER="your_user"
-VERTICA_PASS="your_password"
-EMAIL_FROM="noreply@yourdomain.com"
+# Usage: ./update_all.sh "1233,3334" Asia sari
 
-# === Get recipient emails
-EMAIL_TO=$(vsql -U "$VERTICA_USER" -w "$VERTICA_PASS" -d "$VERTICA_DB" -tAc \
-"SELECT recipient_emails FROM sanity_check_config WHERE feed_name = '$FEED_NAME' LIMIT 1;")
+TRADE_IDS="$1"
+REGION="$2"
+UPDATED_BY="$3"
+EMAIL_TO="your.dg@example.com"
+SUBJECT="Trade updates for: $TRADE_IDS"
+SQL_LOG="/tmp/sql_output_$$.log"
 
-# === HTML header
-cat > "$HTML_FILE" <<EOF
-<html>
-<head>
-  <style>
-    body { font-family: Calibri, sans-serif; }
-    table { border-collapse: collapse; }
-    th, td { border: 1px solid #999; padding: 8px; text-align: left; }
-    th { background-color: #f0f0f0; }
-  </style>
-</head>
-<body>
-<p>Hi,</p>
-<h3>Sanity Check Report - ${FEED_NAME}</h3>
-<p><b>Trade Date:</b> ${TRADE_DATE}</p>
+# Call stored procedure
+b <<EOF > "$SQL_LOG"
+SET SERVEROUTPUT ON
+BEGIN
+    update_trade_info('$REGION', '$UPDATED_BY', '$TRADE_IDS');
+END;
+/
+EXIT;
 EOF
 
-# === Get list of queries for the feed
-vsql -U "$VERTICA_USER" -w "$VERTICA_PASS" -d "$VERTICA_DB" -F '|' -At -c \
-"SELECT query_seq, description, sanity_query FROM sanity_check_config WHERE feed_name = '$FEED_NAME' ORDER BY query_seq;" |
-while IFS='|' read -r seq desc raw_query; do
-  # Replace placeholders
-  final_query=$(echo "$raw_query" | sed "s/:TRADE_DATE/'$TRADE_DATE'/g" | sed "s/:CREATED_DATE/'$TRADE_DATE'/g")
+# Prepare email body
+MAIL_BODY="Below trades were updated:
 
-  echo "<h4>${desc}</h4>" >> "$HTML_FILE"
-  echo "<table>" >> "$HTML_FILE"
+Trade ID(s): $TRADE_IDS
+Region     : $REGION
+Updated By : $UPDATED_BY
 
-  # Get header
-  HEADER=$(vsql -U "$VERTICA_USER" -w "$VERTICA_PASS" -d "$VERTICA_DB" -F '|' -At -c \
-    "SELECT * FROM ($final_query) AS subquery LIMIT 0;" 2>/dev/null | head -n 1)
+$(tail -n 5 "$SQL_LOG")"
 
-  if [ -z "$HEADER" ]; then
-    echo "<tr><td colspan='10'><i>No data or query error</i></td></tr>" >> "$HTML_FILE"
-    echo "</table><br/>" >> "$HTML_FILE"
-    continue
-  fi
+# Send email
+echo "$MAIL_BODY" | mailx -s "$SUBJECT" "$EMAIL_TO"
 
-  # Header row
-  echo "$HEADER" | tr '|' '\n' | while read col; do
-    echo -n "<th>${col}</th>" >> "$HTML_FILE"
-  done
-  echo "</tr>" >> "$HTML_FILE"
+# Clean up
+rm -f "$SQL_LOG"
 
-  # Data rows
-  vsql -U "$VERTICA_USER" -w "$VERTICA_PASS" -d "$VERTICA_DB" -F '|' -At -c "$final_query" | while IFS='|' read -r line; do
-    echo "<tr>" >> "$HTML_FILE"
-    echo "$line" | awk -F'|' '{ for(i=1; i<=NF; i++) printf("<td>%s</td>", $i); print "" }' >> "$HTML_FILE"
-    echo "</tr>" >> "$HTML_FILE"
-  done
 
-  echo "</table><br/>" >> "$HTML_FILE"
-done
+CREATE OR REPLACE PROCEDURE update_trade_info (
+    p_region     IN VARCHAR2,
+    p_updated_by IN VARCHAR2,
+    p_trade_ids  IN VARCHAR2
+)
+AS
+    v_sql1   VARCHAR2(1000);
+    v_sql2   VARCHAR2(1000);
+    v_region VARCHAR2(10);
+BEGIN
+    -- Convert region to uppercase
+    v_region := UPPER(p_region);
 
-# === Close HTML
-cat >> "$HTML_FILE" <<EOF
-<p>Regards,<br/>Data Team</p>
-</body>
-</html>
-EOF
+    -- Validate region
+    IF v_region NOT IN ('AMRS', 'EMEA', 'APAC') THEN
+        RAISE_APPLICATION_ERROR(-20001, 'Invalid region. Must be AMRS, EMEA, or APAC.');
+    END IF;
 
-# === Send Email
-s-nail \
-  -r "$EMAIL_FROM" \
-  -s "Sanity Check Report: $FEED_NAME - $TRADE_DATE" \
-  -S smtp=localhost \
-  -S mime-type=text/html \
-  $EMAIL_TO < "$HTML_FILE"
+    -- Update trade table
+    v_sql1 := 'UPDATE trade SET updated_by = :1, updated_date = SYSDATE WHERE trade_id IN (' || p_trade_ids || ')';
+    EXECUTE IMMEDIATE v_sql1 USING p_updated_by;
+
+    -- Update trade_detail table with uppercase region
+    v_sql2 := 'UPDATE trail SET region = :1, updated_by = :2, updated_date = SYSDATE WHERE trade_id IN (' || p_trade_ids || ')';
+    EXECUTE IMMEDIATE v_sql2 USING v_region, p_updated_by;
+
+    DBMS_OUTPUT.PUT_LINE('Trade and Tradtail updated for traid(s): ' || p_tre_ids);
+END;
+/
+
