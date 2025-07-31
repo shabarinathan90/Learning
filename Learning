@@ -1,1 +1,34 @@
-SELECT * FROM (SELECT emp_daily, cli_daily, emp_daily - cli_daily AS daily_diff, emp_ytd, cli_ytd, emp_ytd - cli_ytd AS ytd_diff FROM (SELECT SUM(daily_cv) AS emp_daily, SUM(ytd_cv) AS emp_ytd FROM active.empcv) emp, (SELECT SUM(daily_cv) AS cli_daily, SUM(ytd_cv) AS cli_ytd FROM active.clientcv) cli) diff WHERE emp_daily != cli_daily OR emp_ytd != cli_ytd UNION ALL SELECT NULL, NULL, NULL, NULL, NULL, NULL WHERE NOT EXISTS (SELECT 1 FROM (SELECT emp_daily, cli_daily, emp_ytd, cli_ytd FROM (SELECT SUM(daily_cv) AS emp_daily, SUM(ytd_cv) AS emp_ytd FROM active.empcv) emp, (SELECT SUM(daily_cv) AS cli_daily, SUM(ytd_cv) AS cli_ytd FROM active.clientcv) cli) WHERE emp_daily != cli_daily OR emp_ytd != cli_ytd);
+Sure! Here’s a revised version of the email with your point added clearly and professionally:
+
+---
+
+**Subject:** Completed: Reusable Sanity Check Automation Framework
+
+Dear \[Manager's Name],
+
+I’m pleased to share that we’ve successfully developed and implemented a **master automation script** for running sanity checks across our data feeds.
+
+Key highlights of this solution:
+
+* The script dynamically fetches configured Oracle SQL queries from a metadata table and executes them.
+* Outputs are formatted into a clean HTML table and sent via email, ensuring quick visibility into the health of each feed.
+* The logic handles no-data and error cases gracefully, improving our monitoring accuracy.
+
+What makes this solution powerful is that it’s built as a **generic, reusable framework**:
+
+* It can run **any Oracle SQL** provided in the config, without code changes.
+* It's **easy to extend** for new feeds or use cases with minimal effort.
+* It’s **adaptable for other teams** or systems with similar requirements.
+
+This should help improve operational efficiency, reduce manual checks, and allow for future scaling without hassle.
+
+Please let me know if you’d like a walkthrough or if we can consider adoption across other processes.
+
+Best regards,
+**\[Your Name]**
+Application Production Support – \[Your Team Name]
+Bank of America
+
+---
+
+Let me know if you want a version with more technical detail or more emphasis on innovation.
