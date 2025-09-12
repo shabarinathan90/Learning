@@ -1,3 +1,135 @@
+
+
+The provided narration is suitable for a professional audience but can be simplified for easier understanding, especially for quick reading and natural delivery. Below is a version in easy, conversational language that retains the original meaning and key points.
+
+Slide 1 – Failure
+"Let’s talk about failure. In production support, it’s something we all face.
+How many of us have had to join late-night calls at 2 a.m. because a critical job failed?
+(Look around, get some hands raised, smile.)
+Yes, it happens to most of us.
+Failures don’t just break our systems – they stop business, delay trades, and sometimes reach senior leaders.
+Imagine driving on a highway and getting a flat tire. Now picture that flat tire blocking traffic worldwide!
+Today, let’s ask: What if we could see those problems before they happened?
+What if failures didn’t surprise us anymore?"
+
+Slide 2 – Agenda
+"Here’s what we’ll cover:
+First, we’ll look at why job failures happen and why they hurt.
+Then, the cost – how these failures affect our team, SLAs, and system stability.
+Next, the shift – how we can move from fixing failures reactively to preventing them before they start.
+After that, the framework – a simple plan using AI and tools we already use.
+Finally, some real examples from our environment."
+
+Slide 3 – Pain Points of Traditional Monitoring
+"Let’s see how things work today.
+Most monitoring is reactive and manual.
+When a job fails, we do this:
+
+Join a call
+
+Check logs
+
+Raise tickets
+
+Rerun jobs
+And repeat, sometimes for the same issue.
+First, checking logs manually is slow and tiring, especially at odd hours.
+Second, we sometimes spot failures too late – by then, the impact has spread to other jobs and SLAs are missed.
+Third, same failures occur again and again, and we fix them each time instead of solving for good.
+Finally, this leads to stress and burnout.
+Manual, reactive monitoring wastes time and wears people out."
+
+Slide 4 – Time Wasted: The Impact
+"Industry says 40–50% of developer and support time is spent on fixing failures, not on new work.
+Imagine half your team stuck fixing problems instead of building better systems.
+It’s like hiring chefs but making them wash dishes all day instead of cooking.
+This leads to missed SLAs, unhappy stakeholders, and lost money.
+For us, it means frustration and slow progress.
+Cutting wasted time in half means more focus on automation and important work."
+
+Slide 5 – From Reactive to Proactive
+"We need to change how we work.
+Right now, we fix problems after they happen.
+Instead, let's try to spot issues early and prevent failures.
+Reactive: Job fails, join calls, investigate, rerun, escalate.
+Proactive: Systems learn from past issues, catch problems early, and auto-fix common failures before calls are needed.
+The goal is less firefighting, more reliability and stability."
+
+Slide 6 – Proactive AI/ML Framework & Tools
+"Here’s how we can make proactive monitoring possible, using current tools:
+Step 1: Data Collection – Pull in logs, job status, error messages, and metrics from everywhere into one place (Kafka, Splunk, ElasticSearch). Use history from Oracle and Vertica to find patterns.
+Step 2: Model Training – Use Python, TensorFlow, and PyTorch to teach systems what normal and failure patterns look like.
+Step 3: Real-Time Monitoring – Check jobs live with Spark Streaming or Flink. Flag anything unusual before it fails.
+Step 4: Automatic Response – Use AutoSys, Ansible, or Python scripts to fix common issues fast (restart jobs, manage space, adjust parameters).
+Step 5: Reporting – Show teams and leaders what was auto-fixed and where help was needed, using dashboards (Grafana, Kibana, Tableau). Data feeds back to make the system smarter every day."
+
+Slide 7 – Real-World Examples
+"Here are two real cases where this helped:
+Case 1: Job fails because of duplicate records. Traditionally, fix one, rerun, repeat.
+Proactive solution: System checks data before running, cleans all bad records at once or gives a cleanup list, saving time.
+Case 2: Upstream file changes break downstream jobs.
+Proactive solution: System checks file structure early, adjusts or alerts team before downstream failures happen.
+Both cases save hours and prevent big incidents."
+
+Slide 8 – Closing & Call to Action
+"Let’s bring it back to failure. Most of us have had late nights, stress, and missed goals because of it.
+But there’s an opportunity here: Prevent incidents, spend less manual effort, and keep our environment stable.
+Like firefighters want to stop fires before they grow, we want to prevent failures before they happen.
+With proactive monitoring, failures become predictable and much easier to handle.
+Thank you."
+(Pause and invite questions)
+
+Speaking Tips
+Look at the audience, not the slides
+
+Take pauses, especially after big points
+
+Use short sentences and simple words
+
+Ask questions to engage everyone
+
+Stay calm and move to the next point when needed
+
+This version keeps the essence of each slide but uses simpler sentences, direct analogies, and cues for engagement so it’s easier to speak and understand. All technical details and context stay accurate.
+
+
+
+Slide 6 is the core of the project, so it should highlight more details and practical insights about the AI/ML framework used to predict and prevent production failures.
+Here’s a revised, easy-language version with clearer steps and more substance:
+
+Slide 6 – Proactive AI/ML Framework & Tools (Expanded)
+"Let’s get into the real idea behind this project — using AI and ML to catch failures before they happen.
+
+1. Full Data Collection
+We start by collecting every bit of data related to jobs — status, logs, error messages, metrics. This comes from different servers and tools like Kafka, Splunk, and ElasticSearch.
+Historical data from Oracle and Vertica helps us find patterns and see how issues built up over time.
+
+2. Smart Feature Selection
+To predict failures, it’s important to focus on the right signals: unusual log entries, changes in job duration, or spikes in error counts.
+By picking the right features from all the data, our models get much smarter at spotting what’s likely to go wrong.
+
+3. Model Training and Testing
+Now, we train machine learning models — using Python, TensorFlow, and PyTorch — to learn what “normal” job runs look like and what patterns are linked to failures or SLA breaches.
+We test these models with old and new data until they get good at predicting issues.
+
+4. Real-Time Analysis and Anomaly Detection
+As jobs run, we monitor everything in real time using tools like Spark Streaming and Flink.
+If anything looks off — like a job running much slower than usual or an error pattern matching past failures — our system flags it before it becomes a problem.
+
+5. Immediate Automated Response
+For common issues, automation steps in — AutoSys, Ansible, or Python scripts can restart jobs, clear space, tweak parameters, or rerun with corrections.
+This means many failures get fixed in seconds, no need for a long call or manual intervention.
+
+6. Reporting, Dashboards, and Continuous Learning
+All actions are logged and displayed in dashboards like Grafana, Kibana, and Tableau, so teams and leaders see auto-fixes, manual steps, and SLA trends across locations.
+This feedback keeps making the models smarter, so prediction and prevention improve constantly.
+
+This expanded slide walks through practical, step-by-step details, making clear how the AI/ML solution works, what makes it powerful, and how every phase helps predict, prevent, and fix failures before they hurt business operations.
+
+
+close
+
+
 Slide 1 – FAILURE (~2 min)
 
 “Failure.
