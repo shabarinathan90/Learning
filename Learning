@@ -1,3 +1,49 @@
+
+Here’s a simple, natural narration for your use case slide, so it flows smoothly during the presentation without sounding overly technical:
+
+
+---
+
+Narration for Use Cases Slide (~1.5 minutes)
+
+“Here are two common failure scenarios we often face in our systems.
+
+Case 1 – Data Write Failures:
+Jobs fail while writing to the database due to data quality issues, resource bottlenecks, or replication delays.
+Every time this happens, it leads to reruns, incidents, bridgeline calls, and sometimes even SLA breaches.
+
+Our AI solution steps in by predicting failures early using both data and database health patterns.
+It detects bad records upfront, cleans them or prepares a cleanup list, and even pauses or reroutes writes if replication lag is detected.
+This prevents repeated failures and keeps our SLAs stable.
+
+
+---
+
+Case 2 – Incorrect File Structure:
+In this scenario, jobs generate files successfully but fail during SFTP transfer —
+maybe due to expired keys, network glitches, or disk space issues.
+The problem here is that a single failure forces a full rerun, adding hours of delay.
+
+AI helps by pre-checking keys, permissions, and space before the transfer starts.
+If a transfer fails midway, it resumes intelligently instead of starting from scratch,
+and even adapts retry logic based on the type of failure.
+This saves significant time and reduces reruns drastically.
+
+
+---
+
+Together, these proactive checks reduce incidents, protect SLAs, and give our teams time to focus on improvements instead of firefighting.”
+
+
+---
+
+Would you like me to add this narration as speaker notes in your PPT for quick reference during your talk?
+
+
+
+
+
+
 Now, let’s look at the heart of our solution — the Proactive AI/ML Framework.
 This is the engine that takes raw signals and turns them into real-time actions and insights. It helps us predict and stop failures before they affect the business.The framework works in five steps, and each step takes us from constant firefighting to reliable, predictive support.Step 1: Data IngestionThe first step is collecting data from different sources.
 We pull in job logs, application alerts, system metrics, and database events — basically, anything that can show early signs of risk.Using tools like Kafka, Splunk, or ElasticSearch, this data comes in real time.
